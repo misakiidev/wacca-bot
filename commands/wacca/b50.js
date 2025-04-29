@@ -146,7 +146,10 @@ module.exports = {
           )?.imageName;
           let judgements = score.scoreData.judgements;
           let judgementString = `${judgements.marvelous}/${judgements.great}/${judgements.good}/${judgements.miss}`;
-          let time = moment(score.timeAchieved).fromNow();
+          let time =
+            score.timeAchieved === 0
+              ? "Unknown"
+              : moment(score.timeAchieved).fromNow();
 
           oldScores.push([
             englishSongName,
@@ -217,7 +220,10 @@ module.exports = {
           )?.imageName;
           let judgements = score.scoreData.judgements;
           let judgementString = `${judgements.marvelous}/${judgements.great}/${judgements.good}/${judgements.miss}`;
-          let time = moment(score.timeAchieved).fromNow();
+          let time =
+            score.timeAchieved === 0
+              ? "Unknown"
+              : moment(score.timeAchieved).fromNow();
 
           newScores.push([
             englishSongName,

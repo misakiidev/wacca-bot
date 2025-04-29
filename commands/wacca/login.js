@@ -57,6 +57,9 @@ module.exports = {
               content: "Your username has been saved successfully!",
               flags: MessageFlags.Ephemeral,
             });
+            console.log(
+              `User ${userId} saved their Kamaitachi username: ${username}`
+            );
             db.close();
           }
         );
