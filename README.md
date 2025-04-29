@@ -1,5 +1,7 @@
 # Wacca Bot
 
+![b50](https://github.com/user-attachments/assets/87f240d3-3028-4ba3-a051-08cab44dcfd4)
+
 Wacca Bot is a Discord bot made to see a rating breakdown for Wacca.
 
 https://misakii.dev/waccabot
