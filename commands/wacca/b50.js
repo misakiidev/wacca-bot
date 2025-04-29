@@ -1,4 +1,8 @@
 const { SlashCommandBuilder } = require("discord.js");
+const sqlite3 = require("sqlite3").verbose();
+const db = new sqlite3.Database(
+  require("path").resolve(__dirname, "../../usernames.db")
+);
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -8,16 +12,43 @@ module.exports = {
       option
         .setName("username")
         .setDescription("Kamaitachi Username")
-        .setRequired(true)
+        .setRequired(false)
     ),
 
   async execute(interaction) {
     await interaction.deferReply();
-    const username = interaction.options.getString("username");
+    let username = interaction.options.getString("username");
     const { waccaSongs } = require("../../waccaSongs.js");
     const { createCanvas, loadImage } = require("canvas");
     const fs = require("fs");
     const moment = require("moment");
+
+    if (!username) {
+      username = await new Promise((resolve, reject) => {
+        db.get(
+          "SELECT username FROM users WHERE id = ?",
+          [interaction.user.id],
+          (err, row) => {
+            if (err) {
+              console.error("Database error:", err);
+              interaction.editReply({
+                content: "An error occurred while fetching your username.",
+              });
+              return reject(err);
+            }
+            if (!row) {
+              interaction.editReply({
+                content:
+                  "No username found for your account. Please set your username first.",
+              });
+              return resolve(null);
+            }
+            resolve(row.username);
+          }
+        );
+      });
+      if (!username) return;
+    }
 
     const fetchScores = async () => {
       try {
@@ -43,7 +74,6 @@ module.exports = {
         interaction.editReply({
           content:
             "Error fetching data. Please check the username or try again later.",
-          ephemeral: true,
         });
         return;
       }
