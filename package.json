@@ -1,0 +1,17 @@
+{
+  "name": "wacca-bot",
+  "version": "1.0.0",
+  "description": "Discord Bot to see a rating breakdown for Wacca.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "misakii",
+  "license": "ISC",
+  "dependencies": {
+    "canvas": "^3.1.0",
+    "discord.js": "^14.19.1",
+    "dotenv": "^16.5.0",
+    "moment": "^2.30.1"
+  }
+}
