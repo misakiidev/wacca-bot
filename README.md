@@ -1,6 +1,7 @@
 # Wacca Bot
 
 Wacca Bot is a Discord bot made to see a rating breakdown for Wacca.
+https://misakii.dev/waccabot
 
 ## Installation
 
