@@ -69,6 +69,64 @@ module.exports = {
     let oldScores = [];
     let newScores = [];
 
+    const processScores = (pbs, songs, charts, filterCondition, limit) => {
+      return pbs
+        .filter((score) => {
+          const song = songs.find((song) => song.id === score.songID);
+          const chart = charts.find((chart) => chart.chartID === score.chartID);
+          let difficulty = chart.difficulty;
+          const difficultyMap = { NORMAL: 1, HARD: 2, EXPERT: 3, INFERNO: 4 };
+          difficulty = difficultyMap[difficulty];
+
+          const waccaSong = waccaSongs.find((waccaSong) => {
+            const titles = [song.title, song.altTitles?.[0]];
+            return (
+              titles.includes(waccaSong.title) ||
+              titles.includes(waccaSong.titleEnglish)
+            );
+          });
+
+          return waccaSong && filterCondition(waccaSong, difficulty)
+            ? song
+            : null;
+        })
+        .slice(0, limit)
+        .map((score) => {
+          const song = songs.find((song) => song.id === score.songID);
+          const chart = charts.find((chart) => chart.chartID === score.chartID);
+          const difficulty = chart.difficulty;
+          const levelNum = chart.levelNum;
+          const matchedSong = waccaSongs.find((waccaSong) => {
+            const titles = [waccaSong.title, waccaSong.titleEnglish];
+            return (
+              titles.includes(song.title) ||
+              titles.includes(song.altTitles?.[0])
+            );
+          });
+          const englishSongName = matchedSong?.titleEnglish || song.title;
+          const imageName = matchedSong?.imageName;
+          const judgements = score.scoreData.judgements;
+          const judgementString = `${judgements.marvelous}/${judgements.great}/${judgements.good}/${judgements.miss}`;
+          const time =
+            score.timeAchieved === 0
+              ? "Unknown"
+              : moment(score.timeAchieved).fromNow();
+
+          return [
+            englishSongName,
+            score.scoreData.score,
+            score.scoreData.grade,
+            score.calculatedData.rate,
+            levelNum,
+            difficulty,
+            imageName,
+            score.scoreData.lamp,
+            time,
+            judgementString,
+          ];
+        });
+    };
+
     fetchScores().then((data) => {
       if (!data) {
         interaction.editReply({
@@ -78,167 +136,35 @@ module.exports = {
         return;
       }
 
-      if (data) {
-        const pbs = data.body.pbs;
-        const songs = data.body.songs;
-        const charts = data.body.charts;
+      const { pbs, songs, charts } = data.body;
 
-        pbs.sort((a, b) => {
-          if (b.calculatedData.rate === a.calculatedData.rate) {
-            return b.scoreData.score - a.scoreData.score;
-          }
-          return b.calculatedData.rate - a.calculatedData.rate;
-        });
+      pbs.sort((a, b) => {
+        if (b.calculatedData.rate === a.calculatedData.rate) {
+          return b.scoreData.score - a.scoreData.score;
+        }
+        return b.calculatedData.rate - a.calculatedData.rate;
+      });
 
-        const bestOldScores = pbs
-          .filter((score) => {
-            const song = songs.find((song) => song.id === score.songID);
-            let chart = charts.find((chart) => chart.chartID === score.chartID);
-            let difficulty = chart.difficulty;
-            switch (difficulty) {
-              case "NORMAL":
-                difficulty = 1;
-                break;
-              case "HARD":
-                difficulty = 2;
-                break;
-              case "EXPERT":
-                difficulty = 3;
-                break;
-              case "INFERNO":
-                difficulty = 4;
-                break;
-            }
-            const waccaSong = waccaSongs.find((waccaSong) => {
-              const titles = [song.title, song.altTitles?.[0]];
-              return (
-                titles.includes(waccaSong.title) ||
-                titles.includes(waccaSong.titleEnglish)
-              );
-            });
+      oldScores = processScores(
+        pbs,
+        songs,
+        charts,
+        (waccaSong, difficulty) =>
+          waccaSong.sheets[difficulty - 1].gameVersion !== 5 &&
+          waccaSong.sheets[difficulty - 1].gameVersion !== 6,
+        35
+      );
 
-            return waccaSong &&
-              waccaSong.sheets[difficulty - 1].gameVersion !== 5 &&
-              waccaSong.sheets[difficulty - 1].gameVersion !== 6
-              ? song
-              : null;
-          })
-          .slice(0, 35);
+      newScores = processScores(
+        pbs,
+        songs,
+        charts,
+        (waccaSong, difficulty) =>
+          waccaSong.sheets[difficulty - 1].gameVersion === 5 ||
+          waccaSong.sheets[difficulty - 1].gameVersion === 6,
+        15
+      );
 
-        bestOldScores.forEach((score) => {
-          let songName = songs.find((song) => song.id === score.songID).title;
-          let altSongName =
-            songs.find((song) => song.id === score.songID)?.altTitles?.[0] ||
-            songName;
-          let chart = charts.find((chart) => chart.chartID === score.chartID);
-          let levelNum = chart.levelNum;
-          let difficulty = chart.difficulty;
-          const englishSongName =
-            waccaSongs.find(
-              (waccaSong) =>
-                [waccaSong.title, waccaSong.titleEnglish].includes(songName) ||
-                [waccaSong.title, waccaSong.titleEnglish].includes(altSongName)
-            )?.titleEnglish || songName;
-          let imageName = waccaSongs.find(
-            (waccaSong) =>
-              [waccaSong.title, waccaSong.titleEnglish].includes(songName) ||
-              [waccaSong.title, waccaSong.titleEnglish].includes(altSongName)
-          )?.imageName;
-          let judgements = score.scoreData.judgements;
-          let judgementString = `${judgements.marvelous}/${judgements.great}/${judgements.good}/${judgements.miss}`;
-          let time =
-            score.timeAchieved === 0
-              ? "Unknown"
-              : moment(score.timeAchieved).fromNow();
-
-          oldScores.push([
-            englishSongName,
-            score.scoreData.score,
-            score.scoreData.grade,
-            score.calculatedData.rate,
-            levelNum,
-            difficulty,
-            imageName,
-            score.scoreData.lamp,
-            time,
-            judgementString,
-          ]);
-        });
-
-        const bestNewScores = pbs
-          .filter((score) => {
-            const song = songs.find((song) => song.id === score.songID);
-            let chart = charts.find((chart) => chart.chartID === score.chartID);
-            let difficulty = chart.difficulty;
-            switch (difficulty) {
-              case "NORMAL":
-                difficulty = 1;
-                break;
-              case "HARD":
-                difficulty = 2;
-                break;
-              case "EXPERT":
-                difficulty = 3;
-                break;
-              case "INFERNO":
-                difficulty = 4;
-                break;
-            }
-            const waccaSong = waccaSongs.find((waccaSong) => {
-              const titles = [song.title, song.altTitles?.[0]];
-              return (
-                titles.includes(waccaSong.title) ||
-                titles.includes(waccaSong.titleEnglish)
-              );
-            });
-
-            return waccaSong &&
-              (waccaSong.sheets[difficulty - 1].gameVersion === 5 ||
-                waccaSong.sheets[difficulty - 1].gameVersion === 6)
-              ? song
-              : null;
-          })
-          .slice(0, 15);
-
-        bestNewScores.forEach((score) => {
-          let songName = songs.find((song) => song.id === score.songID).title;
-          let altSongName =
-            songs.find((song) => song.id === score.songID)?.altTitles?.[0] ||
-            songName;
-          let chart = charts.find((chart) => chart.chartID === score.chartID);
-          let levelNum = chart.levelNum;
-          let difficulty = chart.difficulty;
-          const englishSongName =
-            waccaSongs.find((waccaSong) => {
-              const titles = [waccaSong.title, waccaSong.titleEnglish];
-              return titles.includes(songName) || titles.includes(altSongName);
-            })?.titleEnglish || songName;
-          let imageName = waccaSongs.find(
-            (waccaSong) =>
-              [waccaSong.title, waccaSong.titleEnglish].includes(songName) ||
-              [waccaSong.title, waccaSong.titleEnglish].includes(altSongName)
-          )?.imageName;
-          let judgements = score.scoreData.judgements;
-          let judgementString = `${judgements.marvelous}/${judgements.great}/${judgements.good}/${judgements.miss}`;
-          let time =
-            score.timeAchieved === 0
-              ? "Unknown"
-              : moment(score.timeAchieved).fromNow();
-
-          newScores.push([
-            englishSongName,
-            score.scoreData.score,
-            score.scoreData.grade,
-            score.calculatedData.rate,
-            levelNum,
-            difficulty,
-            imageName,
-            score.scoreData.lamp,
-            time,
-            judgementString,
-          ]);
-        });
-      }
       makeImages();
     });
 
@@ -259,12 +185,18 @@ module.exports = {
         const normal = await loadImage(
           require("path").resolve(__dirname, "../../assets/normal.png")
         );
-        registerFont(require("path").resolve(__dirname, "../../assets/segoeui.ttf"), {
-          family: "Segoe UI",
-        });
-        registerFont(require("path").resolve(__dirname, "../../assets/fallingskybd.ttf"), {
-          family: "Falling Sky",
-        });
+        registerFont(
+          require("path").resolve(__dirname, "../../assets/segoeui.ttf"),
+          {
+            family: "Segoe UI",
+          }
+        );
+        registerFont(
+          require("path").resolve(__dirname, "../../assets/fallingskybd.ttf"),
+          {
+            family: "Falling Sky",
+          }
+        );
         const canvas = createCanvas(background.width, background.height);
         const ctx = canvas.getContext("2d");
         ctx.textRendering = "optimizeLegibility";
@@ -288,158 +220,92 @@ module.exports = {
 
         const columns = 5;
         const xOffset = 30;
-        let yOffset = 425;
         const xSpacing = 365;
         const ySpacing = 240;
-        let totalRate = 0;
 
-        for (const [index, score] of oldScores.entries()) {
-          const row = Math.floor(index / columns);
-          const col = index % columns;
-          const x = xOffset + col * xSpacing;
-          const y = yOffset + row * ySpacing;
-          totalRate += score[3];
-          let imageToDraw;
-          switch (score[5]) {
-            case "INFERNO":
-              imageToDraw = inferno;
-              break;
-            case "EXPERT":
-              imageToDraw = expert;
-              break;
-            case "HARD":
-              imageToDraw = hard;
-              break;
-            case "NORMAL":
-              imageToDraw = normal;
-              break;
-            default:
+        const drawScores = async (scores, yOffsetStart, totalRateCallback) => {
+          let yOffset = yOffsetStart;
+          let totalRate = 0;
+
+          for (const [index, score] of scores.entries()) {
+            const row = Math.floor(index / columns);
+            const col = index % columns;
+            const x = xOffset + col * xSpacing;
+            const y = yOffset + row * ySpacing;
+            totalRate += score[3];
+
+            const difficultyImages = {
+              INFERNO: inferno,
+              EXPERT: expert,
+              HARD: hard,
+              NORMAL: normal,
+            };
+            const imageToDraw = difficultyImages[score[5]];
+            if (!imageToDraw) {
               console.error("Unknown difficulty:", score[5]);
               continue;
-          }
-          ctx.drawImage(imageToDraw, x, y);
-          const imageX = x + 10;
-          const imageY = y + 60;
-          const imageSize = 110;
-          const cover = await loadImage(
-            `https://webui.wacca.plus/wacca/img/covers/${score[6]}`
-          );
+            }
 
-          ctx.drawImage(cover, imageX, imageY, imageSize, imageSize);
-          ctx.font = "bold 32px Falling Sky, Segoe UI, sans-serif";
-          drawShortenedText(score[0], 320, x + 10, y + 25);
-          ctx.font = "bold 36px Falling Sky, Segoe UI, sans-serif";
-          const formattedScore = score[1].toLocaleString();
-          ctx.fillText(`${formattedScore}`, x + 130, y + 75);
-          ctx.font = "bold 24px Falling Sky, Segoe UI, sans-serif";
-          let lampText = "";
-          switch (score[7]) {
-            case "ALL MARVELOUS":
-              lampText = "[AM]";
-              break;
-            case "FULL COMBO":
-              lampText = "[FC]";
-              break;
-            case "MISSLESS":
-              lampText = "[ML]";
-              break;
-            default:
-              lampText = "";
-          }
-          ctx.fillText(`[${score[2]}] ${lampText}`, x + 130, y + 110);
-          ctx.font = "bold 26px Falling Sky, Segoe UI, sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(
-            `${score[4] % 1 === 0 ? score[4].toFixed(1) : score[4]}`,
-            x + 160,
-            y + 150
-          );
-          ctx.textAlign = "left";
-          ctx.font = "bold 36px Falling Sky, Segoe UI, sans-serif";
-          ctx.fillText(`${score[3].toFixed(2)}`, x + 230, y + 150);
-          ctx.font = "bold 20px Falling Sky, Segoe UI, sans-serif";
-          ctx.fillText(`${score[8]} | ${score[9]}`, x + 10, y + 196);
-        }
-        ctx.fillStyle = "#000000";
-        ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
-        ctx.fillText(`${totalRate.toFixed(3)}`, 410, 360);
-        ctx.fillStyle = "#FFFFFF";
-        let totalNewRate = 0;
-        yOffset = 2235;
+            ctx.drawImage(imageToDraw, x, y);
+            const imageX = x + 10;
+            const imageY = y + 60;
+            const imageSize = 110;
+            const cover = await loadImage(
+              `https://webui.wacca.plus/wacca/img/covers/${score[6]}`
+            );
 
-        for (const [index, score] of newScores.entries()) {
-          const row = Math.floor(index / columns);
-          const col = index % columns;
-          const x = xOffset + col * xSpacing;
-          const y = yOffset + row * ySpacing;
-          totalNewRate += score[3];
-          let imageToDraw;
-          switch (score[5]) {
-            case "INFERNO":
-              imageToDraw = inferno;
-              break;
-            case "EXPERT":
-              imageToDraw = expert;
-              break;
-            case "HARD":
-              imageToDraw = hard;
-              break;
-            case "NORMAL":
-              imageToDraw = normal;
-              break;
-            default:
-              console.error("Unknown difficulty:", score[5]);
-              return;
-          }
-          ctx.drawImage(imageToDraw, x, y);
-          const imageX = x + 10;
-          const imageY = y + 60;
-          const imageSize = 110;
-          const cover = await loadImage(
-            `https://webui.wacca.plus/wacca/img/covers/${score[6]}`
-          );
+            ctx.drawImage(cover, imageX, imageY, imageSize, imageSize);
+            ctx.font = "bold 32px Falling Sky, Segoe UI, sans-serif";
+            drawShortenedText(score[0], 320, x + 10, y + 25);
+            ctx.font = "bold 36px Falling Sky, Segoe UI, sans-serif";
+            ctx.fillText(`${score[1].toLocaleString()}`, x + 130, y + 75);
 
-          ctx.drawImage(cover, imageX, imageY, imageSize, imageSize);
-          ctx.font = "bold 32px Falling Sky, Segoe UI, sans-serif";
-          drawShortenedText(score[0], 320, x + 10, y + 25);
-          ctx.font = "bold 36px Falling Sky, Segoe UI, sans-serif";
-          const formattedScore = score[1].toLocaleString();
-          ctx.fillText(`${formattedScore}`, x + 130, y + 75);
-          ctx.font = "bold 24px Falling Sky, Segoe UI, sans-serif";
-          let lampText = "";
-          switch (score[7]) {
-            case "ALL MARVELOUS":
-              lampText = "[AM]";
-              break;
-            case "FULL COMBO":
-              lampText = "[FC]";
-              break;
-            case "MISSLESS":
-              lampText = "[ML]";
-              break;
-            default:
-              lampText = "";
+            ctx.font = "bold 24px Falling Sky, Segoe UI, sans-serif";
+            const lampTextMap = {
+              "ALL MARVELOUS": "[AM]",
+              "FULL COMBO": "[FC]",
+              MISSLESS: "[ML]",
+            };
+            const lampText = lampTextMap[score[7]] || "";
+            ctx.fillText(`[${score[2]}] ${lampText}`, x + 130, y + 110);
+
+            ctx.font = "bold 26px Falling Sky, Segoe UI, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(
+              `${score[4] % 1 === 0 ? score[4].toFixed(1) : score[4]}`,
+              x + 160,
+              y + 150
+            );
+            ctx.textAlign = "left";
+            ctx.font = "bold 36px Falling Sky, Segoe UI, sans-serif";
+            ctx.fillText(`${score[3].toFixed(2)}`, x + 230, y + 150);
+
+            ctx.font = "bold 20px Falling Sky, Segoe UI, sans-serif";
+            ctx.fillText(`${score[8]} | ${score[9]}`, x + 10, y + 196);
           }
-          ctx.fillText(`[${score[2]}] ${lampText}`, x + 130, y + 110);
-          ctx.font = "bold 26px Falling Sky, Segoe UI, sans-serif";
-          ctx.textAlign = "center";
-          ctx.fillText(
-            `${score[4] % 1 === 0 ? score[4].toFixed(1) : score[4]}`,
-            x + 160,
-            y + 150
-          );
-          ctx.textAlign = "left";
-          ctx.font = "bold 36px Falling Sky, Segoe UI, sans-serif";
-          ctx.fillText(`${score[3].toFixed(2)}`, x + 230, y + 151);
-          ctx.font = "bold 20px Falling Sky, Segoe UI, sans-serif";
-          ctx.fillText(`${score[8]} | ${score[9]}`, x + 10, y + 196);
-        }
-        ctx.fillStyle = "#000000";
-        ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
-        ctx.fillText(`${totalNewRate.toFixed(3)}`, 410, 2170);
-        ctx.fillStyle = "#FFFFFF";
+
+          totalRateCallback(totalRate);
+        };
+
+        await drawScores(oldScores, 425, (rate) => {
+          ctx.fillStyle = "#000000";
+          ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
+          ctx.fillText(`${rate.toFixed(3)}`, 410, 360);
+          ctx.fillStyle = "#FFFFFF";
+        });
+
+        await drawScores(newScores, 2235, (rate) => {
+          ctx.fillStyle = "#000000";
+          ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
+          ctx.fillText(`${rate.toFixed(3)}`, 410, 2170);
+          ctx.fillStyle = "#FFFFFF";
+        });
+
+        const totalRate =
+          oldScores.reduce((sum, score) => sum + score[3], 0) +
+          newScores.reduce((sum, score) => sum + score[3], 0);
+
         ctx.font = "black 72px Falling Sky, Segoe UI, sans-serif";
-        totalRate = totalRate + totalNewRate;
         ctx.textAlign = "center";
         ctx.fillText(
           `${username} - Best Scores - Rate: ${totalRate.toFixed(1)}`,
