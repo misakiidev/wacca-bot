@@ -8,16 +8,30 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName("b50")
     .setDescription("See your best 50 scores.")
+
     .addStringOption((option) =>
       option
         .setName("username")
         .setDescription("Kamaitachi Username")
         .setRequired(false)
+    )
+    .addStringOption((option) =>
+      option
+        .setName("naive")
+        .setDescription(
+          "Use the naive rating system instead of the in-game one."
+        )
+        .setRequired(false)
+        .addChoices(
+          { name: "True", value: "true" },
+          { name: "False", value: "false" }
+        )
     ),
 
   async execute(interaction) {
     await interaction.deferReply();
     let username = interaction.options.getString("username");
+    const naive = interaction.options.getString("naive") === "true";
     const { waccaSongs } = require("../../waccaSongs.js");
     const { createCanvas, loadImage, registerFont } = require("canvas");
     const fs = require("fs");
@@ -68,6 +82,8 @@ module.exports = {
 
     let oldScores = [];
     let newScores = [];
+    // regardless of the game version, we will always show the best 50 scores
+    let bestScores = [];
 
     const processScores = (pbs, songs, charts, filterCondition, limit) => {
       return pbs
@@ -165,6 +181,8 @@ module.exports = {
         15
       );
 
+      bestScores = processScores(pbs, songs, charts, () => true, 50);
+
       makeImages();
     });
 
@@ -172,6 +190,12 @@ module.exports = {
       try {
         const background = await loadImage(
           require("path").resolve(__dirname, "../../assets/background.png")
+        );
+        const background_naive = await loadImage(
+          require("path").resolve(
+            __dirname,
+            "../../assets/background_naive.png"
+          )
         );
         const inferno = await loadImage(
           require("path").resolve(__dirname, "../../assets/inferno.png")
@@ -197,7 +221,10 @@ module.exports = {
             family: "Falling Sky",
           }
         );
-        const canvas = createCanvas(background.width, background.height);
+        const canvas = createCanvas(
+          naive ? background_naive.width : background.width,
+          naive ? background_naive.height : background.height
+        );
         const ctx = canvas.getContext("2d");
         ctx.textRendering = "optimizeLegibility";
         ctx.textAlign = "left";
@@ -216,7 +243,7 @@ module.exports = {
           }
           ctx.fillText(shortenedText, x, y);
         }
-        ctx.drawImage(background, 0, 0);
+        ctx.drawImage(naive ? background_naive : background, 0, 0);
 
         const columns = 5;
         const xOffset = 30;
@@ -287,28 +314,38 @@ module.exports = {
           totalRateCallback(totalRate);
         };
 
-        await drawScores(oldScores, 425, (rate) => {
-          ctx.fillStyle = "#000000";
-          ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
-          ctx.fillText(`${rate.toFixed(3)}`, 410, 360);
-          ctx.fillStyle = "#FFFFFF";
-        });
+        if (!naive) {
+          await drawScores(oldScores, 425, (rate) => {
+            ctx.fillStyle = "#000000";
+            ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
+            ctx.fillText(`${rate.toFixed(3)}`, 410, 360);
+            ctx.fillStyle = "#FFFFFF";
+          });
 
-        await drawScores(newScores, 2235, (rate) => {
-          ctx.fillStyle = "#000000";
-          ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
-          ctx.fillText(`${rate.toFixed(3)}`, 410, 2170);
-          ctx.fillStyle = "#FFFFFF";
-        });
+          await drawScores(newScores, 2235, (rate) => {
+            ctx.fillStyle = "#000000";
+            ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
+            ctx.fillText(`${rate.toFixed(3)}`, 410, 2170);
+            ctx.fillStyle = "#FFFFFF";
+          });
+        } else {
+          await drawScores(bestScores, 320, () => {
+            ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
+            ctx.fillStyle = "#FFFFFF";
+          });
+        }
 
-        const totalRate =
-          oldScores.reduce((sum, score) => sum + score[3], 0) +
-          newScores.reduce((sum, score) => sum + score[3], 0);
+        const totalRate = naive
+          ? bestScores.reduce((sum, score) => sum + score[3], 0)
+          : oldScores.reduce((sum, score) => sum + score[3], 0) +
+            newScores.reduce((sum, score) => sum + score[3], 0);
 
         ctx.font = "black 72px Falling Sky, Segoe UI, sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(
-          `${username} - Best Scores - Rate: ${totalRate.toFixed(1)}`,
+          naive
+            ? `${username} - Naive Best Scores - Rate: ${totalRate.toFixed(2)}`
+            : `${username} - Best Scores - Rate: ${totalRate.toFixed(1)}`,
           936,
           230
         );
