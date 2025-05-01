@@ -19,7 +19,7 @@ module.exports = {
     await interaction.deferReply();
     let username = interaction.options.getString("username");
     const { waccaSongs } = require("../../waccaSongs.js");
-    const { createCanvas, loadImage } = require("canvas");
+    const { createCanvas, loadImage, registerFont } = require("canvas");
     const fs = require("fs");
     const moment = require("moment");
 
@@ -259,6 +259,12 @@ module.exports = {
         const normal = await loadImage(
           require("path").resolve(__dirname, "../../assets/normal.png")
         );
+        registerFont(require("path").resolve(__dirname, "../../assets/segoeui.ttf"), {
+          family: "Segoe UI",
+        });
+        registerFont(require("path").resolve(__dirname, "../../assets/fallingskybd.ttf"), {
+          family: "Falling Sky",
+        });
         const canvas = createCanvas(background.width, background.height);
         const ctx = canvas.getContext("2d");
         ctx.textRendering = "optimizeLegibility";
