@@ -221,6 +221,12 @@ module.exports = {
             family: "Falling Sky",
           }
         );
+        registerFont(
+          require("path").resolve(__dirname, "../../assets/yugothic.ttf"),
+          {
+            family: "Yu Gothic",
+          }
+        );
         const canvas = createCanvas(
           naive ? background_naive.width : background.width,
           naive ? background_naive.height : background.height
@@ -282,12 +288,12 @@ module.exports = {
             );
 
             ctx.drawImage(cover, imageX, imageY, imageSize, imageSize);
-            ctx.font = "bold 32px Falling Sky, Segoe UI, sans-serif";
+            ctx.font = "bold 32px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             drawShortenedText(score[0], 320, x + 10, y + 25);
-            ctx.font = "bold 36px Falling Sky, Segoe UI, sans-serif";
+            ctx.font = "bold 36px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             ctx.fillText(`${score[1].toLocaleString()}`, x + 130, y + 75);
 
-            ctx.font = "bold 24px Falling Sky, Segoe UI, sans-serif";
+            ctx.font = "bold 24px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             const lampTextMap = {
               "ALL MARVELOUS": "[AM]",
               "FULL COMBO": "[FC]",
@@ -296,7 +302,7 @@ module.exports = {
             const lampText = lampTextMap[score[7]] || "";
             ctx.fillText(`[${score[2]}] ${lampText}`, x + 130, y + 110);
 
-            ctx.font = "bold 26px Falling Sky, Segoe UI, sans-serif";
+            ctx.font = "bold 26px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             ctx.textAlign = "center";
             ctx.fillText(
               `${score[4] % 1 === 0 ? score[4].toFixed(1) : score[4]}`,
@@ -304,10 +310,10 @@ module.exports = {
               y + 150
             );
             ctx.textAlign = "left";
-            ctx.font = "bold 36px Falling Sky, Segoe UI, sans-serif";
+            ctx.font = "bold 36px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             ctx.fillText(`${score[3].toFixed(2)}`, x + 230, y + 150);
 
-            ctx.font = "bold 20px Falling Sky, Segoe UI, sans-serif";
+            ctx.font = "bold 20px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             ctx.fillText(`${score[8]} | ${score[9]}`, x + 10, y + 196);
           }
 
@@ -317,20 +323,20 @@ module.exports = {
         if (!naive) {
           await drawScores(oldScores, 425, (rate) => {
             ctx.fillStyle = "#000000";
-            ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
+            ctx.font = "bold 50px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             ctx.fillText(`${rate.toFixed(3)}`, 410, 360);
             ctx.fillStyle = "#FFFFFF";
           });
 
           await drawScores(newScores, 2235, (rate) => {
             ctx.fillStyle = "#000000";
-            ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
+            ctx.font = "bold 50px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             ctx.fillText(`${rate.toFixed(3)}`, 410, 2170);
             ctx.fillStyle = "#FFFFFF";
           });
         } else {
           await drawScores(bestScores, 320, () => {
-            ctx.font = "bold 50px Falling Sky, Segoe UI, sans-serif";
+            ctx.font = "bold 50px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             ctx.fillStyle = "#FFFFFF";
           });
         }
@@ -340,7 +346,7 @@ module.exports = {
           : oldScores.reduce((sum, score) => sum + score[3], 0) +
             newScores.reduce((sum, score) => sum + score[3], 0);
 
-        ctx.font = "black 72px Falling Sky, Segoe UI, sans-serif";
+        ctx.font = "black 72px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(
           naive
