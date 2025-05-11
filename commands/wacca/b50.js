@@ -166,8 +166,8 @@ module.exports = {
         songs,
         charts,
         (waccaSong, difficulty) =>
-          waccaSong.sheets[difficulty - 1].gameVersion !== 5 &&
-          waccaSong.sheets[difficulty - 1].gameVersion !== 6,
+          waccaSong.sheets[difficulty - 1].gameVersion !== 300 &&
+          waccaSong.sheets[difficulty - 1].gameVersion !== 400,
         35
       );
 
@@ -176,8 +176,8 @@ module.exports = {
         songs,
         charts,
         (waccaSong, difficulty) =>
-          waccaSong.sheets[difficulty - 1].gameVersion === 5 ||
-          waccaSong.sheets[difficulty - 1].gameVersion === 6,
+          waccaSong.sheets[difficulty - 1].gameVersion === 300 ||
+          waccaSong.sheets[difficulty - 1].gameVersion === 400,
         15
       );
 
