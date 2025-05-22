@@ -8172,7 +8172,7 @@ const waccaSongs = [
       },
       {
         difficulty: 14.1,
-        gameVersion: 250,
+        gameVersion: 400,
         charter: "やくさんす？ VS レイエズ",
       },
     ],
