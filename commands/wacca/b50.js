@@ -15,23 +15,26 @@ module.exports = {
         .setDescription("Kamaitachi Username")
         .setRequired(false)
     )
-    .addStringOption((option) =>
+    .addBooleanOption((option) =>
       option
         .setName("naive")
         .setDescription(
           "Use the naive rating system instead of the in-game one."
         )
         .setRequired(false)
-        .addChoices(
-          { name: "True", value: "true" },
-          { name: "False", value: "false" }
-        )
+    )
+    .addBooleanOption((option) =>
+      option
+        .setName("plus")
+        .setDescription("Include charts from WACCA+")
+        .setRequired(false)
     ),
 
   async execute(interaction) {
     await interaction.deferReply();
     let username = interaction.options.getString("username");
-    const naive = interaction.options.getString("naive") === "true";
+    const naive = interaction.options.getBoolean("naive");
+    const includePlus = interaction.options.getBoolean("plus") ?? true;
     const { waccaSongs } = require("../../waccaSongs.js");
     const { createCanvas, loadImage, registerFont } = require("canvas");
     const fs = require("fs");
@@ -167,6 +170,7 @@ module.exports = {
         charts,
         (waccaSong, difficulty) =>
           waccaSong.sheets[difficulty - 1].gameVersion !== 300 &&
+          // old scores don't require plus filtering since plus songs are already excluded from here.
           waccaSong.sheets[difficulty - 1].gameVersion !== 400,
         35
       );
@@ -175,13 +179,27 @@ module.exports = {
         pbs,
         songs,
         charts,
-        (waccaSong, difficulty) =>
-          waccaSong.sheets[difficulty - 1].gameVersion === 300 ||
-          waccaSong.sheets[difficulty - 1].gameVersion === 400,
+        (waccaSong, difficulty) => {
+          if (!includePlus) {
+            return (
+              waccaSong.sheets[difficulty - 1].gameVersion === 300
+            );
+          }
+          return waccaSong.sheets[difficulty - 1].gameVersion === 300 ||
+            waccaSong.sheets[difficulty - 1].gameVersion === 400;
+        },
         15
       );
 
-      bestScores = processScores(pbs, songs, charts, () => true, 50);
+      bestScores = processScores(pbs, songs, charts, (waccaSong, difficulty) => {
+          if (!includePlus) {
+            return (
+              waccaSong.sheets[difficulty - 1].gameVersion !== 400
+            );
+          }
+          return true;
+
+      }, 50);
 
       makeImages();
     });
