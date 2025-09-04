@@ -1,18 +1,62 @@
 const { SlashCommandBuilder } = require("discord.js");
 const sqlite3 = require("sqlite3").verbose();
 const db = new sqlite3.Database(
-  require("path").resolve(__dirname, "../../usernames.db")
+  require("path").resolve(__dirname, "../../access_codes.db")
 );
+
+function calculateRate(score, internalLevel) {
+  let scoreCoef = 1;
+
+  if (score >= 995_000) {
+    scoreCoef = 4.05;
+  } else if (score >= 994_000) {
+    scoreCoef = 4.04;
+  } else if (score >= 993_000) {
+    scoreCoef = 4.03;
+  } else if (score >= 992_000) {
+    scoreCoef = 4.02;
+  } else if (score >= 991_000) {
+    scoreCoef = 4.01;
+  } else if (score >= 990_000) {
+    scoreCoef = 4;
+  } else if (score >= 985_000) {
+    scoreCoef = 3.875;
+  } else if (score >= 980_000) {
+    scoreCoef = 3.75;
+  } else if (score >= 975_000) {
+    scoreCoef = 3.625;
+  } else if (score >= 970_000) {
+    scoreCoef = 3.5;
+  } else if (score >= 965_000) {
+    scoreCoef = 3.375;
+  } else if (score >= 960_000) {
+    scoreCoef = 3.25;
+  } else if (score >= 955_000) {
+    scoreCoef = 3.125;
+  } else if (score >= 950_000) {
+    scoreCoef = 3;
+  } else if (score >= 940_000) {
+    scoreCoef = 2.75;
+  } else if (score >= 920_000) {
+    scoreCoef = 2.5;
+  } else if (score >= 900_000) {
+    scoreCoef = 2;
+  } else if (score >= 850_000) {
+    scoreCoef = 1.5;
+  }
+
+  return scoreCoef * internalLevel;
+}
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("b50")
     .setDescription("See your best 50 scores.")
 
-    .addStringOption((option) =>
+    .addMentionableOption((option) =>
       option
-        .setName("username")
-        .setDescription("Kamaitachi Username")
+        .setName("user")
+        .setDescription("The user to see scores for.")
         .setRequired(false)
     )
     .addBooleanOption((option) =>
@@ -22,63 +66,87 @@ module.exports = {
           "Use the naive rating system instead of the in-game one."
         )
         .setRequired(false)
-    )
-    .addBooleanOption((option) =>
-      option
-        .setName("plus")
-        .setDescription("Include charts from WACCA+")
-        .setRequired(false)
     ),
 
   async execute(interaction) {
     await interaction.deferReply();
-    let username = interaction.options.getString("username");
+    const user = interaction.options.getMentionable("user") || interaction.user;
     const naive = interaction.options.getBoolean("naive");
-    const includePlus = interaction.options.getBoolean("plus") ?? true;
     const { waccaSongs } = require("../../waccaSongs.js");
     const { createCanvas, loadImage, registerFont } = require("canvas");
     const fs = require("fs");
-    const moment = require("moment");
 
-    if (!username) {
-      username = await new Promise((resolve, reject) => {
-        db.get(
-          "SELECT username FROM users WHERE id = ?",
-          [interaction.user.id],
-          (err, row) => {
-            if (err) {
-              console.error("Database error:", err);
-              interaction.editReply({
-                content: "An error occurred while fetching your username.",
-              });
-              return reject(err);
-            }
-            if (!row) {
-              interaction.editReply({
-                content:
-                  "No username found for your account. Please set your username first.",
-              });
-              return resolve(null);
-            }
-            resolve(row.username);
+    access_code = await new Promise((resolve, reject) => {
+      db.get(
+        "SELECT access_code FROM users WHERE id = ?",
+        [user.id],
+        (err, row) => {
+          if (err) {
+            console.error("Database error:", err);
+            interaction.editReply({
+              content: "An error occurred while fetching the access code.",
+            });
+            return reject(err);
           }
-        );
-      });
-      if (!username) return;
-    }
+          if (!row) {
+            interaction.editReply({
+              content:
+                "No access code found for the specified account. Please set your access code first or ask them to do so.",
+            });
+            return resolve(null);
+          }
+          resolve(row.access_code);
+        }
+      );
+    });
+    if (!access_code) return;
 
     const fetchScores = async () => {
       try {
         const response = await fetch(
-          `https://kamai.tachi.ac/api/v1/users/${username}/games/wacca/Single/pbs/all`
+          `https://mithical-backend.guegan.de/wacca/user/${access_code}/400`
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+        global.username = data.user_name;
+        function convertToRoman(num) {
+          if (num == 0) {
+            return "None";
+          }
+          const romanLookup = [
+            { value: 10, numeral: "X" },
+            { value: 9, numeral: "IX" },
+            { value: 5, numeral: "V" },
+            { value: 4, numeral: "IV" },
+            { value: 1, numeral: "I" },
+          ];
+          let roman = "";
+          for (const { value, numeral } of romanLookup) {
+            while (num >= value) {
+              roman += numeral;
+              num -= value;
+            }
+          }
+          return roman;
+        }
+
+        global.rank = convertToRoman(data.version_data["400"].rank);
+
+        if (data.version_data["400"].dan_rank == 1) {
+          global.danRank = "(Blue)";
+        } else if (data.version_data["400"].dan_rank == 2) {
+          global.danRank = "(Silver)";
+        } else if (data.version_data["400"].dan_rank == 3) {
+          global.danRank = "(Gold)";
+        } else if (data.version_data["400"].dan_rank == 0) {
+          global.danRank = "";
+        }
+
         return data;
       } catch (error) {
-        console.error("Error fetching best scores:", error);
+        console.error("Error fetching scores:", error);
         return null;
       }
     };
@@ -88,118 +156,78 @@ module.exports = {
     // regardless of the game version, we will always show the best 50 scores
     let bestScores = [];
 
-    const processScores = (pbs, songs, charts, filterCondition, limit) => {
-      return pbs
-        .filter((score) => {
-          const song = songs.find((song) => song.id === score.songID);
-          const chart = charts.find((chart) => chart.chartID === score.chartID);
-          let difficulty = chart.difficulty;
-          const difficultyMap = { NORMAL: 1, HARD: 2, EXPERT: 3, INFERNO: 4 };
-          difficulty = difficultyMap[difficulty];
-
-          const waccaSong = waccaSongs.find((waccaSong) => {
-            const titles = [song.title, song.altTitles?.[0]];
-            return (
-              titles.includes(waccaSong.title) ||
-              titles.includes(waccaSong.titleEnglish)
-            );
-          });
-
-          return waccaSong && filterCondition(waccaSong, difficulty)
-            ? song
-            : null;
-        })
-        .slice(0, limit)
-        .map((score) => {
-          const song = songs.find((song) => song.id === score.songID);
-          const chart = charts.find((chart) => chart.chartID === score.chartID);
-          const difficulty = chart.difficulty;
-          const levelNum = chart.levelNum;
-          const matchedSong = waccaSongs.find((waccaSong) => {
-            const titles = [waccaSong.title, waccaSong.titleEnglish];
-            return (
-              titles.includes(song.title) ||
-              titles.includes(song.altTitles?.[0])
-            );
-          });
-          const englishSongName = matchedSong?.titleEnglish || song.title;
-          const imageName = matchedSong?.imageName;
-          const judgements = score.scoreData.judgements;
-          const judgementString = `${judgements.marvelous}/${judgements.great}/${judgements.good}/${judgements.miss}`;
-          const time =
-            score.timeAchieved === 0
-              ? "Unknown"
-              : moment(score.timeAchieved).fromNow();
-
-          return [
-            englishSongName,
-            score.scoreData.score,
-            score.scoreData.grade,
-            score.calculatedData.rate,
-            levelNum,
-            difficulty,
-            imageName,
-            score.scoreData.lamp,
-            time,
-            judgementString,
-          ];
-        });
+    const processScores = (scores) => {
+      return scores.map((score) => {
+        const songInfo = waccaSongs.find((song) => song.id === score.music_id);
+        const title = songInfo
+          ? songInfo.titleEnglish !== null
+            ? songInfo.titleEnglish
+            : songInfo.title
+          : "Unknown Title";
+        const difficulty = score.music_difficulty;
+        const level =
+          songInfo?.sheets?.[score.music_difficulty - 1]?.difficulty ||
+          "Unknown Level";
+        const rate = calculateRate(score.score, level);
+        let lamp = "[CLEAR]";
+        if (score.all_marvelous_count > 0) {
+          lamp = "[AM]";
+        } else if (score.full_combo_count > 0) {
+          lamp = "[FC]";
+        } else if (score.missless_count > 0) {
+          lamp = "[ML]";
+        }
+        const imageUrl = songInfo ? songInfo.imageName : "Unknown Image";
+        const pb = score.score;
+        const version =
+          songInfo?.sheets?.[score.music_difficulty - 1]?.gameVersion ||
+          "Unknown Version";
+        return [title, difficulty, level, rate, lamp, imageUrl, pb, version];
+      });
     };
 
     fetchScores().then((data) => {
       if (!data) {
         interaction.editReply({
-          content:
-            "Error fetching data. Please check the username or try again later.",
+          content: "Error fetching data. Please try again later.",
         });
         return;
       }
 
-      const { pbs, songs, charts } = data.body;
-
-      pbs.sort((a, b) => {
-        if (b.calculatedData.rate === a.calculatedData.rate) {
-          return b.scoreData.score - a.scoreData.score;
-        }
-        return b.calculatedData.rate - a.calculatedData.rate;
-      });
-
-      oldScores = processScores(
-        pbs,
-        songs,
-        charts,
-        (waccaSong, difficulty) =>
-          waccaSong.sheets[difficulty - 1].gameVersion !== 300 &&
-          // old scores don't require plus filtering since plus songs are already excluded from here.
-          waccaSong.sheets[difficulty - 1].gameVersion !== 400,
-        35
-      );
-
-      newScores = processScores(
-        pbs,
-        songs,
-        charts,
-        (waccaSong, difficulty) => {
-          if (!includePlus) {
-            return (
-              waccaSong.sheets[difficulty - 1].gameVersion === 300
-            );
+      oldScores = processScores(data.music)
+        .filter((score) => !isNaN(score[3]))
+        .filter((score) => parseInt(score[7]) < 400)
+        .sort((a, b) => {
+          if (b[3] === a[3]) {
+            return b[6] - a[6];
+          } else {
+            return b[3] - a[3];
           }
-          return waccaSong.sheets[difficulty - 1].gameVersion === 300 ||
-            waccaSong.sheets[difficulty - 1].gameVersion === 400;
-        },
-        15
-      );
+        })
+        .slice(0, 35);
 
-      bestScores = processScores(pbs, songs, charts, (waccaSong, difficulty) => {
-          if (!includePlus) {
-            return (
-              waccaSong.sheets[difficulty - 1].gameVersion !== 400
-            );
+      newScores = processScores(data.music)
+        .filter((score) => !isNaN(score[3]))
+        .filter((score) => parseInt(score[7]) >= 400)
+        .sort((a, b) => {
+          if (b[3] === a[3]) {
+            return b[6] - a[6];
+          } else {
+            return b[3] - a[3];
           }
-          return true;
+        })
+        .slice(0, 15);
 
-      }, 50);
+      bestScores = processScores(data.music)
+        .filter((score) => !isNaN(score[3]))
+        .sort((a, b) => {
+          if (b[3] === a[3]) {
+            return b[6] - a[6];
+          } else {
+            return b[3] - a[3];
+          }
+        })
+        .slice(0, 50);
 
       makeImages();
     });
@@ -286,14 +314,16 @@ module.exports = {
             totalRate += score[3];
 
             const difficultyImages = {
-              INFERNO: inferno,
-              EXPERT: expert,
-              HARD: hard,
-              NORMAL: normal,
+              1: normal,
+              2: hard,
+              3: expert,
+              4: inferno,
             };
-            const imageToDraw = difficultyImages[score[5]];
+
+            const difficultyKey = score[1];
+            const imageToDraw = difficultyImages[difficultyKey];
             if (!imageToDraw) {
-              console.error("Unknown difficulty:", score[5]);
+              console.error("Unknown difficulty:", difficultyKey);
               continue;
             }
 
@@ -302,37 +332,28 @@ module.exports = {
             const imageY = y + 60;
             const imageSize = 110;
             const cover = await loadImage(
-              `https://webui.wacca.plus/wacca/img/covers/${score[6]}`
+              `https://webui.wacca.plus/wacca/img/covers/${score[5]}`
             );
 
             ctx.drawImage(cover, imageX, imageY, imageSize, imageSize);
             ctx.font = "bold 32px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             drawShortenedText(score[0], 320, x + 10, y + 25);
             ctx.font = "bold 36px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
-            ctx.fillText(`${score[1].toLocaleString()}`, x + 130, y + 75);
+            ctx.fillText(`${score[6].toLocaleString()}`, x + 130, y + 75);
 
             ctx.font = "bold 24px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
-            const lampTextMap = {
-              "ALL MARVELOUS": "[AM]",
-              "FULL COMBO": "[FC]",
-              MISSLESS: "[ML]",
-            };
-            const lampText = lampTextMap[score[7]] || "";
-            ctx.fillText(`[${score[2]}] ${lampText}`, x + 130, y + 110);
+            ctx.fillText(`${score[4]}`, x + 130, y + 110);
 
             ctx.font = "bold 26px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             ctx.textAlign = "center";
             ctx.fillText(
-              `${score[4] % 1 === 0 ? score[4].toFixed(1) : score[4]}`,
+              `${score[2] % 1 === 0 ? score[2].toFixed(1) : score[2]}`,
               x + 160,
               y + 150
             );
             ctx.textAlign = "left";
             ctx.font = "bold 36px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
-            ctx.fillText(`${score[3].toFixed(2)}`, x + 230, y + 150);
-
-            ctx.font = "bold 20px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
-            ctx.fillText(`${score[8]} | ${score[9]}`, x + 10, y + 196);
+            ctx.fillText(`${score[3].toFixed(3)}`, x + 230, y + 150);
           }
 
           totalRateCallback(totalRate);
@@ -368,8 +389,12 @@ module.exports = {
         ctx.textAlign = "center";
         ctx.fillText(
           naive
-            ? `${username} - Naive Best Scores - Rate: ${totalRate.toFixed(2)}`
-            : `${username} - Best Scores - Rate: ${totalRate.toFixed(1)}`,
+            ? `${username} - Rate: ${totalRate.toFixed(2)} - Stage Up: ${
+                global.rank
+              } ${global.danRank}`
+            : `${username} - Rate: ${totalRate.toFixed(1)} - Stage Up: ${
+                global.rank
+              } ${global.danRank}`,
           936,
           230
         );

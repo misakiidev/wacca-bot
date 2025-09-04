@@ -1734,7 +1734,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.3,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -1863,7 +1863,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.2,
         gameVersion: 100,
         charter: "Marvelous",
       },
@@ -3040,7 +3040,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14,
+        difficulty: 14.2,
         gameVersion: 100,
         charter: "Marvelous",
       },
@@ -7690,7 +7690,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14,
+        difficulty: 14.2,
         gameVersion: 200,
         charter: "Marvelous",
       },
@@ -8191,7 +8191,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.2,
         gameVersion: 400,
         charter: "やくさんす？ VS レイエズ",
       },
@@ -9410,7 +9410,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.2,
         gameVersion: 250,
         charter: "Marvelous",
       },
@@ -9446,7 +9446,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14,
         gameVersion: 250,
         charter: "Marvelous",
       },
@@ -9761,7 +9761,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14,
+        difficulty: 14.2,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -10701,7 +10701,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14,
+        difficulty: 14.4,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -10892,7 +10892,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.3,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -10928,7 +10928,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.3,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -11000,7 +11000,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.2,
+        difficulty: 14.5,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -11285,7 +11285,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.4,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -11378,7 +11378,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.3,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -11409,7 +11409,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.3,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -11440,12 +11440,12 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.4,
         gameVersion: 300,
         charter: "Marvelous",
       },
       {
-        difficulty: 15,
+        difficulty: 15.1,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -11693,7 +11693,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14,
+        difficulty: 14.3,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -11910,7 +11910,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14,
+        difficulty: 14.1,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -12101,7 +12101,7 @@ const waccaSongs = [
         charter: "Marvelous",
       },
       {
-        difficulty: 14,
+        difficulty: 14.1,
         gameVersion: 300,
         charter: "Marvelous",
       },
@@ -12573,7 +12573,7 @@ const waccaSongs = [
         charter: "靖",
       },
       {
-        difficulty: 14.2,
+        difficulty: 14.5,
         gameVersion: 400,
         charter: "CODE:Seraphina",
       },
@@ -13288,7 +13288,7 @@ const waccaSongs = [
         charter: "lI1176 (ヤス remix)",
       },
       {
-        difficulty: 14,
+        difficulty: 14.2,
         gameVersion: 400,
         charter: "T Balls 2",
       },
@@ -13358,7 +13358,7 @@ const waccaSongs = [
         charter: "Snowball",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.3,
         gameVersion: 400,
         charter: "Snowball",
       },
@@ -13388,7 +13388,7 @@ const waccaSongs = [
         charter: "<ヤス>",
       },
       {
-        difficulty: 14.1,
+        difficulty: 14.3,
         gameVersion: 400,
         charter: "YUKIDAMA",
       },
@@ -13428,7 +13428,7 @@ const waccaSongs = [
         charter: "dandEGO vs. fraudulentEGO",
       },
       {
-        difficulty: 14.0,
+        difficulty: 14,
         gameVersion: 400,
         charter: "WACCA PLUS FUMEN TEAM「小我」",
       },
@@ -13588,7 +13588,7 @@ const waccaSongs = [
         charter: "Rocket-Propelled Snowball",
       },
       {
-        difficulty: 14,
+        difficulty: 14.2,
         gameVersion: 400,
         charter: "ティンダロスより来たる風雪",
       },
