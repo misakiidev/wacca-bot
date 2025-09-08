@@ -91,7 +91,7 @@ module.exports = {
           if (!row) {
             interaction.editReply({
               content:
-                "No access code found for the specified account. Please set your access code first or ask them to do so.",
+                "No access code found for the specified account. Please /login with your access code first or ask them to do so.",
             });
             return resolve(null);
           }
@@ -399,17 +399,15 @@ module.exports = {
           230
         );
 
-        const out = fs.createWriteStream(`./${username}.png`);
+        const out = fs.createWriteStream(`./${user.id}.png`);
         const stream = canvas.createPNGStream();
         stream.pipe(out);
         out.on("finish", async () => {
-          console.log(`Image successfully created as ${username}.png`);
+          console.log(`Image successfully created as ${user.id}.png`);
           await interaction.editReply({
-            files: [
-              require("path").resolve(__dirname, `../../${username}.png`),
-            ],
+            files: [require("path").resolve(__dirname, `../../${user.id}.png`)],
           });
-          fs.unlink(`./${username}.png`, (err) => {
+          fs.unlink(`./${user.id}.png`, (err) => {
             if (err) {
               console.error(`Error deleting image: ${err}`);
             }
