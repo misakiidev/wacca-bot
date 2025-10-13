@@ -403,7 +403,6 @@ module.exports = {
         const stream = canvas.createPNGStream();
         stream.pipe(out);
         out.on("finish", async () => {
-          console.log(`Image successfully created as ${user.id}.png`);
           await interaction.editReply({
             files: [require("path").resolve(__dirname, `../../${user.id}.png`)],
           });

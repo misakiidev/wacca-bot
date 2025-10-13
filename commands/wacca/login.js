@@ -59,9 +59,6 @@ module.exports = {
               content: "Your access code has been saved successfully!",
               flags: MessageFlags.Ephemeral,
             });
-            console.log(
-              `User ${userId} saved their access code: ${access_code}`
-            );
             db.close();
           }
         );

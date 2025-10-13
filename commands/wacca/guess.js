@@ -31,11 +31,6 @@ module.exports = {
 
     const randomSong =
       waccaSongs[Math.floor(Math.random() * waccaSongs.length)];
-    console.log(
-      `Guess command executed by ${interaction.user.username}. Random song: ${
-        randomSong.titleEnglish || randomSong.title
-      }`
-    );
     const imageUrl = `https://webui.wacca.plus/wacca/img/covers/${randomSong.imageName}`;
     try {
       const imageData = await loadImage(imageUrl);
@@ -118,16 +113,22 @@ module.exports = {
         const maxLen = Math.max(guessInput.length, answer.length);
         const similarity = maxLen === 0 ? 1 : 1 - dist / maxLen;
         const accuracy = Math.floor(similarity * 100);
-        const originalAttachment = new AttachmentBuilder(imageUrl, { name: randomSong.imageName });
+        const originalAttachment = new AttachmentBuilder(imageUrl, {
+          name: randomSong.imageName,
+        });
         await interaction.followUp({
-          content: `${m.author} guessed correctly with an accuracy of ${accuracy}%! The correct answer was: ${randomSong.titleEnglish || randomSong.title}`,
+          content: `${
+            m.author
+          } guessed correctly with an accuracy of ${accuracy}%! The correct answer was: ${
+            randomSong.titleEnglish || randomSong.title
+          }`,
           files: [originalAttachment],
           components: [
             new ActionRowBuilder().addComponents(
               new ButtonBuilder()
-          .setCustomId("guess_again")
-          .setLabel("Play Again")
-          .setStyle(ButtonStyle.Primary)
+                .setCustomId("guess_again")
+                .setLabel("Play Again")
+                .setStyle(ButtonStyle.Primary)
             ),
           ],
         });
@@ -135,22 +136,22 @@ module.exports = {
 
       collector.on("end", async (collected) => {
         if (collected.size === 0) {
-            await interaction.followUp({
+          await interaction.followUp({
             content: `Time's up! The correct answer was: ${
               randomSong.titleEnglish || randomSong.title
             }`,
             files: [
-              new AttachmentBuilder(imageUrl, { name: randomSong.imageName })
+              new AttachmentBuilder(imageUrl, { name: randomSong.imageName }),
             ],
             components: [
               new ActionRowBuilder().addComponents(
-              new ButtonBuilder()
-                .setCustomId("guess_again")
-                .setLabel("Play Again")
-                .setStyle(ButtonStyle.Primary)
+                new ButtonBuilder()
+                  .setCustomId("guess_again")
+                  .setLabel("Play Again")
+                  .setStyle(ButtonStyle.Primary)
               ),
             ],
-            });
+          });
         }
         // Remove the channel from cooldown after the game is over
         guessCooldown.delete(interaction.channel.id);

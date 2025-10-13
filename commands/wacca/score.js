@@ -1,7 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const Fuse = require("fuse.js");
-const { distance } = require("jimp");
-const { normalize } = require("path");
 const sqlite3 = require("sqlite3").verbose();
 const db = new sqlite3.Database(
   require("path").resolve(__dirname, "../../access_codes.db")
@@ -374,13 +372,7 @@ module.exports = {
           { timeZone: "UTC" }
         )} UTC`,
       });
-    } else {
-      console.log("No matching playlog found.");
     }
-
-    console.log(
-      `Score for ${user.tag}: ${song.title} (${difficulty} ${chartConstant}) - ${songScore.score}`
-    );
     return interaction.reply({ embeds: [embed] });
   },
 };

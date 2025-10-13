@@ -1,7 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const Fuse = require("fuse.js");
-const { distance } = require("jimp");
-const { normalize } = require("path");
 const sqlite3 = require("sqlite3").verbose();
 const db = new sqlite3.Database(
   require("path").resolve(__dirname, "../../access_codes.db")
@@ -146,7 +144,7 @@ module.exports = {
       chartConstant = song.sheets[difficultyLevel - 1].difficulty;
     }
     const songId = song.id;
-    const songScore = scoreData.music.find(
+    let songScore = scoreData.music.find(
       (entry) =>
         entry.music_id === songId && entry.music_difficulty === difficultyLevel
     );
@@ -169,11 +167,13 @@ module.exports = {
       SSPlus: "<:grade_ss_plus:1423409829610786898>",
       SSS: "<:sss:1423409827496988815>",
       SSSPlus: "<:grade_sss_plus:1423409825034932274>",
+	  995: "<:grade_995:1427146159826403439>",
       MASTER: "<:grade_master:1423409823176986735>",
     };
 
     const rankOrder = [
       "MASTER",
+	  "995",
       "SSSPlus",
       "SSS",
       "SSPlus",
@@ -218,10 +218,6 @@ module.exports = {
           inline: true,
         }
       );
-
-    console.log(
-      `Stats for ${user.tag}: ${song.title} (${difficulty} ${chartConstant})`
-    );
     return interaction.reply({ embeds: [embed] });
   },
 };
