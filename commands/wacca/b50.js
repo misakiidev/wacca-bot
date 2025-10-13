@@ -389,12 +389,12 @@ module.exports = {
         ctx.textAlign = "center";
         ctx.fillText(
           naive
-            ? `${username} - Rate: ${totalRate.toFixed(2)} - Stage Up: ${
-                global.rank
-              } ${global.danRank}`
-            : `${username} - Rate: ${totalRate.toFixed(1)} - Stage Up: ${
-                global.rank
-              } ${global.danRank}`,
+            ? `${username} - Rate: ${(
+                Math.floor(totalRate * 1000) / 1000
+              ).toFixed(3)} - Stage Up: ${global.rank} ${global.danRank}`
+            : `${username} - Rate: ${(Math.floor(totalRate * 10) / 10).toFixed(
+                1
+              )} - Stage Up: ${global.rank} ${global.danRank}`,
           936,
           230
         );
