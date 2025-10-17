@@ -53,6 +53,30 @@ module.exports = {
           ephemeral: true,
         });
       }
+    } else if (
+      interaction.isButton() &&
+      interaction.customId === "chartle_again"
+    ) {
+      try {
+        const chartleCommand = interaction.client.commands.get("chartle");
+
+        if (!chartleCommand) {
+          console.error("Chartle command not found.");
+          await interaction.reply({
+            content: "Chartle command not found.",
+            ephemeral: true,
+          });
+          return;
+        }
+
+        await chartleCommand.execute(interaction);
+      } catch (error) {
+        console.error(error);
+        await interaction.reply({
+          content: "Error processing the chartle_again button.",
+          ephemeral: true,
+        });
+      }
     }
   },
 };

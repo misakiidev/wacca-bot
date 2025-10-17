@@ -238,11 +238,11 @@ module.exports = {
         {
           name: "GRADE",
           value: `${rankEmojis["MASTER"]} › ${gradeCounts["MASTER"] || 0}
-				  ${rankEmojis["995"]} › ${gradeCounts["995"] || 0}
-				  ${rankEmojis["SSSPlus"]} › ${gradeCounts["SSSPlus"] || 0}
-			      ${rankEmojis["SSS"]} › ${gradeCounts["SSS"] || 0}
-				  ${rankEmojis["SSPlus"]} › ${gradeCounts["SSPlus"] || 0}
-				  ${rankEmojis["SS"]} › ${gradeCounts["SS"] || 0}`,
+${rankEmojis["995"]} › ${gradeCounts["995"] || 0}
+${rankEmojis["SSSPlus"]} › ${gradeCounts["SSSPlus"] || 0}
+${rankEmojis["SSS"]} › ${gradeCounts["SSS"] || 0}
+${rankEmojis["SSPlus"]} › ${gradeCounts["SSPlus"] || 0}
+${rankEmojis["SS"]} › ${gradeCounts["SS"] || 0}`,
           inline: true,
         },
         {
