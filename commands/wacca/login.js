@@ -13,9 +13,16 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    const access_code = interaction.options
-      .getString("access_code")
-      .replaceAll(" ", "");
+    const rawCode = interaction.options.getString("access_code");
+    const access_code = rawCode.replace(/\s/g, ""); // remove all whitespace
+
+    if (!/^\d{20}$/.test(access_code)) {
+      return interaction.reply({
+        content: "Access code must consist of exactly 20 numbers (digits only).",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+
     const userId = interaction.user.id;
     const dbPath = "./access_codes.db";
     const db = new sqlite3.Database(dbPath, (err) => {
