@@ -70,6 +70,24 @@ module.exports = {
 
   async execute(interaction) {
     await interaction.deferReply();
+    if (interaction.user.id === "239187994815365122") {
+      global.shepFailCounts = global.shepFailCounts || new Map();
+
+      await new Promise((resolve) => setTimeout(resolve, 30000));
+      if (Math.random() < 0.5) {
+        const prev = global.shepFailCounts.get(interaction.user.id) || 0;
+        const next = prev + 1;
+        global.shepFailCounts.set(interaction.user.id, next);
+        await interaction.editReply({
+          content: `try again :3 (failed ${next} time${
+            next === 1 ? "" : "s"
+          } in a row)`,
+        });
+        return;
+      } else {
+        global.shepFailCounts.set(interaction.user.id, 0);
+      }
+    }
     const user = interaction.options.getMentionable("user") || interaction.user;
     const naive = interaction.options.getBoolean("naive");
     const { waccaSongs } = require("../../waccaSongs.js");
@@ -232,47 +250,45 @@ module.exports = {
       makeImages();
     });
 
+    const background = await loadImage(
+      require("path").resolve(__dirname, "../../assets/background.png")
+    );
+    const background_naive = await loadImage(
+      require("path").resolve(__dirname, "../../assets/background_naive.png")
+    );
+    const inferno = await loadImage(
+      require("path").resolve(__dirname, "../../assets/inferno.png")
+    );
+    const expert = await loadImage(
+      require("path").resolve(__dirname, "../../assets/expert.png")
+    );
+    const hard = await loadImage(
+      require("path").resolve(__dirname, "../../assets/hard.png")
+    );
+    const normal = await loadImage(
+      require("path").resolve(__dirname, "../../assets/normal.png")
+    );
+    registerFont(
+      require("path").resolve(__dirname, "../../assets/segoeui.ttf"),
+      {
+        family: "Segoe UI",
+      }
+    );
+    registerFont(
+      require("path").resolve(__dirname, "../../assets/fallingskybd.ttf"),
+      {
+        family: "Falling Sky",
+      }
+    );
+    registerFont(
+      require("path").resolve(__dirname, "../../assets/yugothic.ttf"),
+      {
+        family: "Yu Gothic",
+      }
+    );
+
     const makeImages = async () => {
       try {
-        const background = await loadImage(
-          require("path").resolve(__dirname, "../../assets/background.png")
-        );
-        const background_naive = await loadImage(
-          require("path").resolve(
-            __dirname,
-            "../../assets/background_naive.png"
-          )
-        );
-        const inferno = await loadImage(
-          require("path").resolve(__dirname, "../../assets/inferno.png")
-        );
-        const expert = await loadImage(
-          require("path").resolve(__dirname, "../../assets/expert.png")
-        );
-        const hard = await loadImage(
-          require("path").resolve(__dirname, "../../assets/hard.png")
-        );
-        const normal = await loadImage(
-          require("path").resolve(__dirname, "../../assets/normal.png")
-        );
-        registerFont(
-          require("path").resolve(__dirname, "../../assets/segoeui.ttf"),
-          {
-            family: "Segoe UI",
-          }
-        );
-        registerFont(
-          require("path").resolve(__dirname, "../../assets/fallingskybd.ttf"),
-          {
-            family: "Falling Sky",
-          }
-        );
-        registerFont(
-          require("path").resolve(__dirname, "../../assets/yugothic.ttf"),
-          {
-            family: "Yu Gothic",
-          }
-        );
         const canvas = createCanvas(
           naive ? background_naive.width : background.width,
           naive ? background_naive.height : background.height
