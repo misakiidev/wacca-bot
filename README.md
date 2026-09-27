@@ -1,6 +1,6 @@
 # Wacca Bot
 
-![b50](https://github.com/user-attachments/assets/87f240d3-3028-4ba3-a051-08cab44dcfd4)
+<img width="1872" height="3060" alt="412284633586073605" src="https://github.com/user-attachments/assets/996c6903-1940-4b05-a832-2c224da75d78" />
 
 Wacca Bot is a Discord bot made to see a rating breakdown for Wacca.
 
