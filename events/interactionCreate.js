@@ -1,14 +1,19 @@
 const { Events, MessageFlags } = require("discord.js");
+const BannedUsers = new Set(["296311533762248715", "360037421636648960"]);
 
 module.exports = {
   name: Events.InteractionCreate,
   async execute(interaction) {
     if (interaction.isChatInputCommand()) {
+      if (BannedUsers.has(interaction.user.id)) {
+        await new Promise((resolve) => setTimeout(resolve, 60000));
+        return;
+      }
       const command = interaction.client.commands.get(interaction.commandName);
 
       if (!command) {
         console.error(
-          `No command matching ${interaction.commandName} was found.`
+          `No command matching ${interaction.commandName} was found.`,
         );
         return;
       }

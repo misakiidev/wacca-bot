@@ -1,9 +1,15 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  EmbedBuilder,
+  InteractionContextType,
+} = require("discord.js");
 const Fuse = require("fuse.js");
 const sqlite3 = require("sqlite3").verbose();
 const db = new sqlite3.Database(
-  require("path").resolve(__dirname, "../../access_codes.db")
+  require("path").resolve(__dirname, "../../access_codes.db"),
 );
+const { Agent, setGlobalDispatcher } = require("undici");
+setGlobalDispatcher(new Agent({ connect: { rejectUnauthorized: false } }));
 
 const fuse = new Fuse([], {
   keys: ["title", "titleEnglish"],
@@ -30,13 +36,18 @@ function findSong(query, minSimilarity = 0.6) {
 
 module.exports = {
   data: new SlashCommandBuilder()
+    .setContexts(
+      InteractionContextType.PrivateChannel,
+      InteractionContextType.BotDM,
+      InteractionContextType.Guild,
+    )
     .setName("score")
     .setDescription("Find a user's score on a certain WACCA chart.")
     .addStringOption((option) =>
       option
         .setName("song")
         .setDescription("The song to search for.")
-        .setRequired(true)
+        .setRequired(true),
     )
     .addStringOption((option) =>
       option
@@ -46,15 +57,15 @@ module.exports = {
           { name: "Normal", value: "Normal" },
           { name: "Hard", value: "Hard" },
           { name: "Expert", value: "Expert" },
-          { name: "Inferno", value: "Inferno" }
+          { name: "Inferno", value: "Inferno" },
         )
-        .setRequired(false)
+        .setRequired(false),
     )
     .addMentionableOption((option) =>
       option
         .setName("user")
         .setDescription("The user to see scores for.")
-        .setRequired(false)
+        .setRequired(false),
     ),
   async execute(interaction) {
     const user = interaction.options.getMentionable("user") || interaction.user;
@@ -80,7 +91,7 @@ module.exports = {
             return resolve(null);
           }
           resolve(row.access_code);
-        }
+        },
       );
     });
     if (!access_code) return;
@@ -88,7 +99,8 @@ module.exports = {
     const fetchScores = async () => {
       try {
         const response = await fetch(
-          `https://mithical-backend.guegan.de/wacca/user/${access_code}/400`
+          `https://mithical-backend.guegan.de/wacca/user/${access_code}/400`,
+          { Agent },
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -137,20 +149,22 @@ module.exports = {
         song.sheets.length === 4
           ? "Inferno"
           : song.sheets.length === 3
-          ? "Expert"
-          : song.sheets.length === 2
-          ? "Hard"
-          : "Normal";
+            ? "Expert"
+            : song.sheets.length === 2
+              ? "Hard"
+              : "Normal";
       chartConstant = song.sheets[difficultyLevel - 1].difficulty;
     }
     const songId = song.id;
     const songScore = scoreData.music.find(
       (entry) =>
-        entry.music_id === songId && entry.music_difficulty === difficultyLevel
+        entry.music_id === songId && entry.music_difficulty === difficultyLevel,
     );
     if (!songScore) {
       return interaction.reply({
-        content: `No score found for ${song.title} (${difficulty} ${chartConstant}).`,
+        content: `No score found for ${
+          song.titleEnglish || song.title
+        } (${difficulty} ${chartConstant}).`,
       });
     }
 
@@ -239,10 +253,10 @@ module.exports = {
       songScore.all_marvelous_count > 0
         ? "ALL MARVELOUS"
         : songScore.full_combo_count > 0
-        ? "FULL COMBO"
-        : songScore.missless_count > 0
-        ? "MISSLESS"
-        : "CLEAR";
+          ? "FULL COMBO"
+          : songScore.missless_count > 0
+            ? "MISSLESS"
+            : "CLEAR";
 
     function calculateRate(score, internalLevel) {
       let scoreCoef = 1;
@@ -293,10 +307,13 @@ module.exports = {
       .setTitle(
         `${
           song.titleEnglish ? song.titleEnglish : song.title
-        } (${difficulty} ${chartConstant})`
+        } (${difficulty} ${chartConstant})`,
       )
       .setThumbnail(
-        `https://webui.wacca.plus/wacca/img/covers/${song.imageName}`
+        `https://webui.wacca.plus/wacca/img/covers/${song.imageName.replace(
+          /\.png$/,
+          ".webp",
+        )}`,
       )
       .addFields(
         {
@@ -311,13 +328,14 @@ module.exports = {
         },
         { name: "LAMP", value: `${highestLamp}`, inline: true },
         { name: "COMBO", value: `${songScore.combo}`, inline: true },
-        { name: "PLAY COUNT", value: `${songScore.play_count}`, inline: true }
+        { name: "PLAY COUNT", value: `${songScore.play_count}`, inline: true },
       );
 
     const fetchAdditionalData = async () => {
       try {
         const response = await fetch(
-          `https://mithical-backend.guegan.de/wacca/user/${access_code}/music/${songId}`
+          `https://mithical-backend.guegan.de/wacca/user/${access_code}/music/${songId}`,
+          { Agent },
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -334,7 +352,7 @@ module.exports = {
     const matchingPlaylog = additionalData.find(
       (log) =>
         log.info.music_difficulty === difficultyLevel &&
-        log.info.score === songScore.score
+        log.info.score === songScore.score,
     );
 
     if (matchingPlaylog) {
@@ -369,7 +387,7 @@ module.exports = {
       embed.setFooter({
         text: `Played on ${formattedDate} at ${playDate.toLocaleTimeString(
           "en-US",
-          { timeZone: "UTC" }
+          { timeZone: "UTC" },
         )} UTC`,
       });
     }

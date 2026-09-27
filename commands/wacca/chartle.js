@@ -9,6 +9,7 @@ const { AttachmentBuilder } = require("discord.js");
 const { loadImage, createCanvas } = require("canvas");
 const { execFile } = require("child_process");
 const fs = require("fs");
+const sharp = require("sharp");
 
 // Map to track active guessing games per channel
 const guessCooldown = new Map();
@@ -90,7 +91,7 @@ module.exports = {
               matrix[i][j] = Math.min(
                 matrix[i - 1][j] + 1,
                 matrix[i][j - 1] + 1,
-                matrix[i - 1][j - 1] + 1
+                matrix[i - 1][j - 1] + 1,
               );
             }
           }
@@ -108,7 +109,7 @@ module.exports = {
         const wordMatch = guessInput
           .split(/\s+/)
           .some(
-            (word) => word.length >= 5 && answer.split(/\s+/).includes(word)
+            (word) => word.length >= 5 && answer.split(/\s+/).includes(word),
           );
         return similarity >= 0.5 || (wordMatch && similarity >= 0.25);
       };
@@ -145,7 +146,7 @@ module.exports = {
               new ButtonBuilder()
                 .setCustomId("chartle_again")
                 .setLabel("Play Again")
-                .setStyle(ButtonStyle.Primary)
+                .setStyle(ButtonStyle.Primary),
             ),
           ],
         });
@@ -162,7 +163,7 @@ module.exports = {
                 new ButtonBuilder()
                   .setCustomId("chartle_again")
                   .setLabel("Play Again")
-                  .setStyle(ButtonStyle.Primary)
+                  .setStyle(ButtonStyle.Primary),
               ),
             ],
           });

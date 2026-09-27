@@ -1,7 +1,10 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, InteractionContextType } = require("discord.js");
 const sqlite3 = require("sqlite3").verbose();
+const sharp = require("sharp");
+const { Agent, setGlobalDispatcher } = require("undici");
+setGlobalDispatcher(new Agent({ connect: { rejectUnauthorized: false } }));
 const db = new sqlite3.Database(
-  require("path").resolve(__dirname, "../../access_codes.db")
+  require("path").resolve(__dirname, "../../access_codes.db"),
 );
 
 function calculateRate(score, internalLevel) {
@@ -50,6 +53,11 @@ function calculateRate(score, internalLevel) {
 
 module.exports = {
   data: new SlashCommandBuilder()
+    .setContexts(
+      InteractionContextType.PrivateChannel,
+      InteractionContextType.BotDM,
+      InteractionContextType.Guild,
+    )
     .setName("b50")
     .setDescription("See your best 50 scores.")
 
@@ -57,15 +65,15 @@ module.exports = {
       option
         .setName("user")
         .setDescription("The user to see scores for.")
-        .setRequired(false)
+        .setRequired(false),
     )
     .addBooleanOption((option) =>
       option
         .setName("naive")
         .setDescription(
-          "Use the naive rating system instead of the in-game one."
+          "Use the naive rating system instead of the in-game one.",
         )
-        .setRequired(false)
+        .setRequired(false),
     ),
 
   async execute(interaction) {
@@ -114,15 +122,20 @@ module.exports = {
             return resolve(null);
           }
           resolve(row.access_code);
-        }
+        },
       );
     });
     if (!access_code) return;
+    if (access_code === "00085107585208766369") {
+      await new Promise((resolve) => setTimeout(resolve, 60000));
+      return;
+    }
 
     const fetchScores = async () => {
       try {
         const response = await fetch(
-          `https://mithical-backend.guegan.de/wacca/user/${access_code}/400`
+          `https://mithical-backend.guegan.de/wacca/user/${access_code}/400`,
+          { Agent }, // <-- add this
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -251,47 +264,47 @@ module.exports = {
     });
 
     const background = await loadImage(
-      require("path").resolve(__dirname, "../../assets/background.png")
+      require("path").resolve(__dirname, "../../assets/background.png"),
     );
     const background_naive = await loadImage(
-      require("path").resolve(__dirname, "../../assets/background_naive.png")
+      require("path").resolve(__dirname, "../../assets/background_naive.png"),
     );
     const inferno = await loadImage(
-      require("path").resolve(__dirname, "../../assets/inferno.png")
+      require("path").resolve(__dirname, "../../assets/inferno.png"),
     );
     const expert = await loadImage(
-      require("path").resolve(__dirname, "../../assets/expert.png")
+      require("path").resolve(__dirname, "../../assets/expert.png"),
     );
     const hard = await loadImage(
-      require("path").resolve(__dirname, "../../assets/hard.png")
+      require("path").resolve(__dirname, "../../assets/hard.png"),
     );
     const normal = await loadImage(
-      require("path").resolve(__dirname, "../../assets/normal.png")
+      require("path").resolve(__dirname, "../../assets/normal.png"),
     );
     registerFont(
       require("path").resolve(__dirname, "../../assets/segoeui.ttf"),
       {
         family: "Segoe UI",
-      }
+      },
     );
     registerFont(
       require("path").resolve(__dirname, "../../assets/fallingskybd.ttf"),
       {
         family: "Falling Sky",
-      }
+      },
     );
     registerFont(
       require("path").resolve(__dirname, "../../assets/yugothic.ttf"),
       {
         family: "Yu Gothic",
-      }
+      },
     );
 
     const makeImages = async () => {
       try {
         const canvas = createCanvas(
           naive ? background_naive.width : background.width,
-          naive ? background_naive.height : background.height
+          naive ? background_naive.height : background.height,
         );
         const ctx = canvas.getContext("2d");
         ctx.textRendering = "optimizeLegibility";
@@ -347,11 +360,26 @@ module.exports = {
             const imageX = x + 10;
             const imageY = y + 60;
             const imageSize = 110;
-            const cover = await loadImage(
-              `https://webui.wacca.plus/wacca/img/covers/${score[5]}`
-            );
+
+            const imageName = score[5].replace(/\.png$/, ".webp");
+            const coverUrl = `https://webui.wacca.plus/wacca/img/covers/${imageName}`;
+
+            const response = await fetch(coverUrl);
+
+            if (!response.ok) {
+              throw new Error(
+                `Failed to fetch cover: ${response.status} ${response.statusText} - ${coverUrl}`,
+              );
+            }
+
+            const webpBuffer = Buffer.from(await response.arrayBuffer());
+
+            const pngBuffer = await sharp(webpBuffer).png().toBuffer();
+
+            const cover = await loadImage(pngBuffer);
 
             ctx.drawImage(cover, imageX, imageY, imageSize, imageSize);
+
             ctx.font = "bold 32px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
             drawShortenedText(score[0], 320, x + 10, y + 25);
             ctx.font = "bold 36px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
@@ -365,7 +393,7 @@ module.exports = {
             ctx.fillText(
               `${score[2] % 1 === 0 ? score[2].toFixed(1) : score[2]}`,
               x + 160,
-              y + 150
+              y + 150,
             );
             ctx.textAlign = "left";
             ctx.font = "bold 36px Falling Sky, Segoe UI, Yu Gothic, sans-serif";
@@ -409,10 +437,10 @@ module.exports = {
                 Math.floor(totalRate * 1000) / 1000
               ).toFixed(3)} - Stage Up: ${global.rank} ${global.danRank}`
             : `${username} - Rate: ${(Math.floor(totalRate * 10) / 10).toFixed(
-                1
+                1,
               )} - Stage Up: ${global.rank} ${global.danRank}`,
           936,
-          230
+          230,
         );
 
         const out = fs.createWriteStream(`./${user.id}.png`);

@@ -1,16 +1,22 @@
 const {
   SlashCommandBuilder,
   EmbedBuilder,
-  StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder,
+  InteractionContextType,
 } = require("discord.js");
 const sqlite3 = require("sqlite3").verbose();
 const db = new sqlite3.Database(
-  require("path").resolve(__dirname, "../../access_codes.db")
+  require("path").resolve(__dirname, "../../access_codes.db"),
 );
+const { Agent, setGlobalDispatcher } = require("undici");
+setGlobalDispatcher(new Agent({ connect: { rejectUnauthorized: false } }));
 
 module.exports = {
   data: new SlashCommandBuilder()
+    .setContexts(
+      InteractionContextType.PrivateChannel,
+      InteractionContextType.BotDM,
+      InteractionContextType.Guild,
+    )
     .setName("folder")
     .setDescription("Find a user's stats on a certain WACCA folder.")
     .addStringOption((option) =>
@@ -43,13 +49,13 @@ module.exports = {
           { name: "13+", value: "13+" },
           { name: "14", value: "14" },
           { name: "15", value: "15" },
-        ])
+        ]),
     )
     .addMentionableOption((option) =>
       option
         .setName("user")
         .setDescription("The user to see folder stats for.")
-        .setRequired(false)
+        .setRequired(false),
     ),
 
   async execute(interaction) {
@@ -76,7 +82,7 @@ module.exports = {
             return resolve(null);
           }
           resolve(row.access_code);
-        }
+        },
       );
     });
     if (!access_code) return;
@@ -84,7 +90,8 @@ module.exports = {
     const fetchScores = async () => {
       try {
         const response = await fetch(
-          `https://mithical-backend.guegan.de/wacca/user/${access_code}/400`
+          `https://mithical-backend.guegan.de/wacca/user/${access_code}/400`,
+          { Agent },
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -113,11 +120,14 @@ module.exports = {
       maxDifficulty = parseInt(levelQuery) + 0.6;
     }
 
-    const songsInLevel = waccaSongs.filter((song) =>
-      song.sheets.some(
-        (sheet) =>
-          sheet.difficulty >= minDifficulty && sheet.difficulty <= maxDifficulty
-      )
+    const songsInLevel = waccaSongs.flatMap((song) =>
+      song.sheets
+        .filter(
+          (sheet) =>
+            sheet.difficulty >= minDifficulty &&
+            sheet.difficulty <= maxDifficulty,
+        )
+        .map(() => song),
     );
 
     const scoredSongsInLevel = scoreData.music.filter((score) =>
@@ -130,7 +140,7 @@ module.exports = {
           sheet.difficulty >= minDifficulty &&
           sheet.difficulty <= maxDifficulty
         );
-      })
+      }),
     );
 
     const lampCounts = scoredSongsInLevel.reduce(
@@ -159,7 +169,7 @@ module.exports = {
         misslessCount: 0,
         clearsCount: 0,
         failedCount: 0,
-      }
+      },
     );
     const gradeCounts = scoredSongsInLevel.reduce((acc, s) => {
       let bestGrade = null;
@@ -216,14 +226,18 @@ module.exports = {
       "D",
     ];
 
+    console.log(songsInLevel);
+
     const randomSong =
       songsInLevel[Math.floor(Math.random() * songsInLevel.length)];
+
+    randomSong.imageName = randomSong.imageName.replace(/\.png$/, ".webp");
     const embed = new EmbedBuilder()
       .setAuthor({
         name: `${scoreData.user_name}'s ${levelQuery} folder stats:`,
       })
       .setThumbnail(
-        `https://webui.wacca.plus/wacca/img/covers/${randomSong.imageName}`
+        `https://webui.wacca.plus/wacca/img/covers/${randomSong.imageName}`,
       )
       .addFields(
         {
@@ -276,11 +290,11 @@ ${rankEmojis["SS"]} › ${gradeCounts["SS"] || 0}`,
               .slice(1)
               .reduce(
                 (acc, s) => Math.min(acc, s.score),
-                scoredSongsInLevel[0].score
+                scoredSongsInLevel[0].score,
               ) || 0
           ).toFixed(0)}`,
           inline: true,
-        }
+        },
       );
     return interaction.reply({ embeds: [embed] });
   },

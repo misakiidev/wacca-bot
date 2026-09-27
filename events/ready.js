@@ -12,6 +12,8 @@ module.exports = {
     });
     console.log(`Ready! Logged in as ${client.user.tag}`);
 
+    
+
     // const serverList = [];
     // client.guilds.cache.forEach((guild) => {
     //   const serverInfo = {

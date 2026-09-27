@@ -7,6 +7,7 @@ const {
 const { waccaSongs } = require("../../waccaSongs.js");
 const { AttachmentBuilder } = require("discord.js");
 const { loadImage, createCanvas } = require("canvas");
+const sharp = require("sharp");
 
 // Map to track active guessing games per channel
 const guessCooldown = new Map();
@@ -26,27 +27,54 @@ module.exports = {
       });
       return;
     }
+
     // Set cooldown active for this channel
     guessCooldown.set(interaction.channel.id, true);
 
     const randomSong =
       waccaSongs[Math.floor(Math.random() * waccaSongs.length)];
-    const imageUrl = `https://webui.wacca.plus/wacca/img/covers/${randomSong.imageName}`;
+
+    const imageUrl = `https://webui.wacca.plus/wacca/img/covers/${randomSong.imageName.replace(
+      /\.png$/,
+      ".webp",
+    )}`;
+
     try {
-      const imageData = await loadImage(imageUrl);
+      const response = await fetch(imageUrl);
+
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch image: ${response.status} ${response.statusText}`,
+        );
+      }
+
+      const webpBuffer = Buffer.from(await response.arrayBuffer());
+
+      const pngBuffer = await sharp(webpBuffer).png().toBuffer();
+
+      const imageData = await loadImage(pngBuffer);
+
       const { width, height } = imageData;
+
       const randomX = Math.floor(Math.random() * (width - 80));
       const randomY = Math.floor(Math.random() * (height - 80));
+
       const canvas = createCanvas(80, 80);
       const ctx = canvas.getContext("2d");
+
       ctx.drawImage(imageData, randomX, randomY, 80, 80, 0, 0, 80, 80);
+
       const buffer = canvas.toBuffer("image/png");
-      const attachment = new AttachmentBuilder(buffer, { name: "guess.png" });
+      const attachment = new AttachmentBuilder(buffer, {
+        name: "guess.png",
+      });
+
       await interaction.reply({
         content:
           "Guess the song! You have 15 seconds to type the song name in the chat to guess.",
         files: [attachment],
       });
+
       const answer = (randomSong.titleEnglish || randomSong.title)
         .toLowerCase()
         .normalize("NFD")
@@ -65,12 +93,15 @@ module.exports = {
         const matrix = [];
         const aLen = a.length;
         const bLen = b.length;
+
         for (let i = 0; i <= aLen; i++) {
           matrix[i] = [i];
         }
+
         for (let j = 0; j <= bLen; j++) {
           matrix[0][j] = j;
         }
+
         for (let i = 1; i <= aLen; i++) {
           for (let j = 1; j <= bLen; j++) {
             if (a.charAt(i - 1) === b.charAt(j - 1)) {
@@ -79,28 +110,35 @@ module.exports = {
               matrix[i][j] = Math.min(
                 matrix[i - 1][j] + 1,
                 matrix[i][j - 1] + 1,
-                matrix[i - 1][j - 1] + 1
+                matrix[i - 1][j - 1] + 1,
               );
             }
           }
         }
+
         return matrix[aLen][bLen];
       };
 
       const filter = (m) => {
         if (m.author.bot) return false;
+
         const guessInput = normalize(m.content);
         const dist = levenshtein(guessInput, answer);
         const maxLen = Math.max(guessInput.length, answer.length);
+
         if (maxLen === 0) return false;
+
         const similarity = 1 - dist / maxLen;
+
         const wordMatch = guessInput
           .split(/\s+/)
           .some(
-            (word) => word.length >= 5 && answer.split(/\s+/).includes(word)
+            (word) => word.length >= 5 && answer.split(/\s+/).includes(word),
           );
+
         return similarity >= 0.5 || (wordMatch && similarity >= 0.25);
       };
+
       const collector = interaction.channel.createMessageCollector({
         filter,
         time: 15000,
@@ -108,14 +146,17 @@ module.exports = {
 
       collector.on("collect", async (m) => {
         collector.stop();
+
         const guessInput = normalize(m.content);
         const dist = levenshtein(guessInput, answer);
         const maxLen = Math.max(guessInput.length, answer.length);
         const similarity = maxLen === 0 ? 1 : 1 - dist / maxLen;
         const accuracy = Math.floor(similarity * 100);
+
         const originalAttachment = new AttachmentBuilder(imageUrl, {
-          name: randomSong.imageName,
+          name: randomSong.imageName.replace(/\.png$/, ".webp"),
         });
+
         await interaction.followUp({
           content: `${
             m.author
@@ -128,7 +169,7 @@ module.exports = {
               new ButtonBuilder()
                 .setCustomId("guess_again")
                 .setLabel("Play Again")
-                .setStyle(ButtonStyle.Primary)
+                .setStyle(ButtonStyle.Primary),
             ),
           ],
         });
@@ -141,28 +182,33 @@ module.exports = {
               randomSong.titleEnglish || randomSong.title
             }`,
             files: [
-              new AttachmentBuilder(imageUrl, { name: randomSong.imageName }),
+              new AttachmentBuilder(imageUrl, {
+                name: randomSong.imageName.replace(/\.png$/, ".webp"),
+              }),
             ],
             components: [
               new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                   .setCustomId("guess_again")
                   .setLabel("Play Again")
-                  .setStyle(ButtonStyle.Primary)
+                  .setStyle(ButtonStyle.Primary),
               ),
             ],
           });
         }
+
         // Remove the channel from cooldown after the game is over
         guessCooldown.delete(interaction.channel.id);
       });
     } catch (error) {
       console.error("Error loading image:", error);
+
       await interaction.reply({
         content:
           "There was an error generating the guess image. Please try again later.",
         ephemeral: true,
       });
+
       // Ensure we remove the cooldown if an error occurs
       guessCooldown.delete(interaction.channel.id);
     }

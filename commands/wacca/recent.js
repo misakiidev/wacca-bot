@@ -1,13 +1,24 @@
-const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  EmbedBuilder,
+  InteractionContextType,
+} = require("discord.js");
 const Fuse = require("fuse.js");
 const score = require("./score.js");
 const sqlite3 = require("sqlite3").verbose();
 const db = new sqlite3.Database(
-  require("path").resolve(__dirname, "../../access_codes.db")
+  require("path").resolve(__dirname, "../../access_codes.db"),
 );
+const { Agent, setGlobalDispatcher } = require("undici");
+setGlobalDispatcher(new Agent({ connect: { rejectUnauthorized: false } }));
 
 module.exports = {
   data: new SlashCommandBuilder()
+    .setContexts(
+      InteractionContextType.PrivateChannel,
+      InteractionContextType.BotDM,
+      InteractionContextType.Guild,
+    )
     .setName("recent")
     .setDescription("Show a user's most recent WACCA play.")
     .addStringOption((option) =>
@@ -15,13 +26,18 @@ module.exports = {
         .setName("count")
         .setDescription("How many recent plays to show (3-4).")
         .setRequired(false)
-        .addChoices({ name: "3", value: "3" }, { name: "4", value: "4" })
+        .addChoices(
+          { name: "1", value: "1" },
+          { name: "2", value: "2" },
+          { name: "3", value: "3" },
+          { name: "4", value: "4" },
+        ),
     )
     .addMentionableOption((option) =>
       option
         .setName("user")
         .setDescription("The user to see stats for.")
-        .setRequired(false)
+        .setRequired(false),
     ),
   async execute(interaction) {
     const user = interaction.options.getMentionable("user") || interaction.user;
@@ -47,7 +63,7 @@ module.exports = {
             return resolve(null);
           }
           resolve(row.access_code);
-        }
+        },
       );
     });
     if (!access_code) return;
@@ -55,7 +71,8 @@ module.exports = {
     const fetchScores = async () => {
       try {
         const response = await fetch(
-          `https://mithical-backend.guegan.de/wacca/user/${access_code}/400`
+          `https://mithical-backend.guegan.de/wacca/user/${access_code}/400`,
+          { Agent },
         );
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -79,7 +96,7 @@ module.exports = {
     const playlog = scoreData.playlog;
     const count = Math.min(
       parseInt(interaction.options.getString("count")) || 3,
-      10
+      10,
     );
     const recentPlays = playlog.slice(0, count);
 
@@ -224,10 +241,13 @@ module.exports = {
       const embed = new EmbedBuilder()
         .setAuthor({ name: `${scoreData.user_name}'s recent play:` })
         .setTitle(
-          `${song.titleEnglish || song.title} (${difficulty} ${chartConstant})`
+          `${song.titleEnglish || song.title} (${difficulty} ${chartConstant})`,
         )
         .setThumbnail(
-          `https://webui.wacca.plus/wacca/img/covers/${song.imageName}`
+          `https://webui.wacca.plus/wacca/img/covers/${song.imageName.replace(
+            /\.png$/,
+            ".webp",
+          )}`,
         )
         .addFields(
           {
@@ -259,14 +279,14 @@ module.exports = {
             name: "JUDGEMENTS",
             value: `${info.judge.marvelous}/${info.judge.great}/${info.judge.good}/${info.judge.miss}`,
             inline: true,
-          }
+          },
         );
       embed.setFooter({
         text: `Played on ${formattedDate} at ${playDate.toLocaleTimeString(
           "en-US",
           {
             timeZone: "UTC",
-          }
+          },
         )} UTC`,
       });
 

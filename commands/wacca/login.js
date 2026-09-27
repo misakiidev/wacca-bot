@@ -1,8 +1,17 @@
-const { SlashCommandBuilder, MessageFlags } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  MessageFlags,
+  InteractionContextType,
+} = require("discord.js");
 const sqlite3 = require("sqlite3").verbose();
 
 module.exports = {
   data: new SlashCommandBuilder()
+    .setContexts(
+      InteractionContextType.PrivateChannel,
+      InteractionContextType.BotDM,
+      InteractionContextType.Guild
+    )
     .setName("login")
     .setDescription("Save your Mythos access code.")
     .addStringOption((option) =>
@@ -18,7 +27,8 @@ module.exports = {
 
     if (!/^\d{20}$/.test(access_code)) {
       return interaction.reply({
-        content: "Access code must consist of exactly 20 numbers (digits only).",
+        content:
+          "Access code must consist of exactly 20 numbers (digits only).",
         flags: MessageFlags.Ephemeral,
       });
     }
